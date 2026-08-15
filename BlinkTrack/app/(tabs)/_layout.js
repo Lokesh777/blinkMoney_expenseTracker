@@ -23,6 +23,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: COLORS.textTertiary,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabLabel,
+        tabBarShowLabel: true,
       }}
     >
       <Tabs.Screen
@@ -38,7 +39,8 @@ export default function TabLayout() {
         name="add"
         options={{
           title: '',
-          tabBarButton: () => (
+          tabBarIcon: () => null,
+          tabBarButton: (props) => (
             <AddButton onPress={() => router.push('/add-transaction')} />
           ),
         }}
@@ -75,13 +77,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   addBtn: {
+    position: 'absolute',
+    left: '50%',
+    marginLeft: -27,
+    top: -22,
     width: 54,
     height: 54,
     borderRadius: 27,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -22,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
