@@ -15,12 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '../shared/constants/theme';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { CATEGORIES, formatCurrency } from '../features/transactions/utils/helpers';
-import CategoryChip from '../features/transactions/components/CategoryChip';
 
-/**
- * Add Transaction Screen - Modal for recording a new expense.
- * Features numeric input, category selector, note, and date picker.
- */
 export default function AddTransactionScreen() {
   const router = useRouter();
   const { add } = useTransactions();
@@ -30,21 +25,15 @@ export default function AddTransactionScreen() {
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Handle numeric input - only allow digits and one decimal
   const handleAmountChange = (text) => {
-    // Remove non-numeric chars except decimal
     const cleaned = text.replace(/[^0-9.]/g, '');
-    // Only allow one decimal point
     const parts = cleaned.split('.');
     if (parts.length > 2) return;
-    // Limit decimal places to 2
     if (parts[1] && parts[1].length > 2) return;
     setAmount(cleaned);
   };
 
-  // Validate and save transaction
   const handleSave = async () => {
-    // Validation
     const parsedAmount = parseFloat(amount);
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
       Alert.alert('Invalid Amount', 'Please enter a valid amount greater than zero.');
@@ -71,6 +60,8 @@ export default function AddTransactionScreen() {
     }
   };
 
+  const isValid = parseFloat(amount) > 0 && selectedCategory;
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -78,90 +69,97 @@ export default function AddTransactionScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <Ionicons name="close" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Expense</Text>
+        <Text style={styles.headerTitle}>New Expense</Text>
         <TouchableOpacity
           onPress={handleSave}
-          disabled={saving}
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          disabled={saving || !isValid}
+          style={[styles.saveBtn, (!isValid || saving) && styles.saveBtnDisabled]}
         >
-          <Text style={[styles.saveButtonText, saving && styles.saveButtonTextDisabled]}>
+          <Text style={[styles.saveBtnText, (!isValid || saving) && styles.saveBtnTextDisabled]}>
             {saving ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        style={styles.content}
+        style={styles.body}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Amount Input */}
-        <View style={styles.amountSection}>
-          <Text style={styles.currencySymbol}>₹</Text>
+        {/* Amount */}
+        <View style={styles.amountCard}>
+          <Text style={styles.amountPrefix}>₹</Text>
           <TextInput
             style={styles.amountInput}
             value={amount}
             onChangeText={handleAmountChange}
             placeholder="0"
-            placeholderTextColor={COLORS.textTertiary}
+            placeholderTextColor="rgba(255,255,255,0.4)"
             keyboardType="decimal-pad"
             autoFocus
             maxLength={10}
           />
         </View>
 
-        {/* Category Selector */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Category</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipContainer}
-          >
-            {CATEGORIES.map((cat) => (
-              <CategoryChip
+        {/* Categories */}
+        <Text style={styles.sectionLabel}>Category</Text>
+        <View style={styles.categoriesGrid}>
+          {CATEGORIES.map((cat) => {
+            const isSelected = selectedCategory === cat.name;
+            return (
+              <TouchableOpacity
                 key={cat.id}
-                name={cat.name}
-                isSelected={selectedCategory === cat.name}
-                onPress={setSelectedCategory}
-              />
-            ))}
-          </ScrollView>
+                style={[
+                  styles.catBtn,
+                  isSelected && { backgroundColor: cat.color, borderColor: cat.color },
+                ]}
+                onPress={() => setSelectedCategory(cat.name)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={cat.icon}
+                  size={20}
+                  color={isSelected ? '#fff' : cat.color}
+                />
+                <Text
+                  style={[styles.catBtnText, isSelected && styles.catBtnTextSelected]}
+                >
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Note Input */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Note (optional)</Text>
-          <View style={styles.noteInputContainer}>
-            <Ionicons name="pencil-outline" size={18} color={COLORS.textTertiary} />
-            <TextInput
-              style={styles.noteInput}
-              value={note}
-              onChangeText={setNote}
-              placeholder="What was this expense for?"
-              placeholderTextColor={COLORS.textTertiary}
-              maxLength={100}
-            />
-          </View>
+        {/* Note */}
+        <Text style={styles.sectionLabel}>Note (optional)</Text>
+        <View style={styles.inputCard}>
+          <Ionicons name="pencil-outline" size={16} color={COLORS.textTertiary} />
+          <TextInput
+            style={styles.textInput}
+            value={note}
+            onChangeText={setNote}
+            placeholder="What was this for?"
+            placeholderTextColor={COLORS.textTertiary}
+            maxLength={100}
+          />
         </View>
 
-        {/* Date Display */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Date</Text>
-          <View style={styles.dateContainer}>
-            <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
-            <Text style={styles.dateText}>
-              {new Date().toLocaleDateString('en-IN', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </Text>
-          </View>
+        {/* Date */}
+        <Text style={styles.sectionLabel}>Date</Text>
+        <View style={styles.dateCard}>
+          <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
+          <Text style={styles.dateText}>
+            {new Date().toLocaleDateString('en-IN', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -177,17 +175,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: SPACING.xxxxl,
+    paddingTop: 56,
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.lg,
     backgroundColor: COLORS.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.border,
   },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.divider,
     alignItems: 'center',
     justifyContent: 'center',
@@ -195,89 +193,115 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...TYPOGRAPHY.title,
     color: COLORS.textPrimary,
+    fontWeight: '700',
   },
-  saveButton: {
+  saveBtn: {
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    paddingVertical: 10,
     borderRadius: BORDER_RADIUS.sm,
     backgroundColor: COLORS.primary,
   },
-  saveButtonDisabled: {
-    opacity: 0.6,
+  saveBtnDisabled: {
+    opacity: 0.4,
   },
-  saveButtonText: {
+  saveBtnText: {
     ...TYPOGRAPHY.label,
-    color: COLORS.textInverse,
-    fontWeight: '600',
+    color: '#fff',
+    fontWeight: '700',
   },
-  saveButtonTextDisabled: {
-    color: 'rgba(255,255,255,0.7)',
+  saveBtnTextDisabled: {
+    color: 'rgba(255,255,255,0.6)',
   },
-  content: {
+  body: {
     flex: 1,
     paddingHorizontal: SPACING.xl,
   },
-  amountSection: {
+  amountCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.xxxxl,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.xl,
+    paddingVertical: 32,
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    ...SHADOWS.lg,
   },
-  currencySymbol: {
-    fontSize: 32,
+  amountPrefix: {
+    fontSize: 28,
     fontWeight: '700',
-    color: COLORS.primary,
-    marginRight: SPACING.sm,
+    color: 'rgba(255,255,255,0.7)',
+    marginRight: 4,
   },
   amountInput: {
     fontSize: 48,
     fontWeight: '800',
-    color: COLORS.textPrimary,
-    minWidth: 80,
+    color: '#fff',
+    minWidth: 60,
     textAlign: 'center',
     letterSpacing: -1,
   },
-  section: {
-    marginBottom: SPACING.xxl,
-  },
   sectionLabel: {
     ...TYPOGRAPHY.label,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
+    color: COLORS.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: SPACING.md,
   },
-  chipContainer: {
-    paddingRight: SPACING.lg,
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: SPACING.xxl,
   },
-  noteInputContainer: {
+  catBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    gap: 6,
+  },
+  catBtnText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.textSecondary,
+  },
+  catBtnTextSelected: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  inputCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginBottom: SPACING.xxl,
   },
-  noteInput: {
+  textInput: {
     flex: 1,
     ...TYPOGRAPHY.body,
     color: COLORS.textPrimary,
     marginLeft: SPACING.sm,
   },
-  dateContainer: {
+  dateCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primarySurface,
     borderRadius: BORDER_RADIUS.md,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
+    paddingVertical: 14,
+    gap: 8,
   },
   dateText: {
     ...TYPOGRAPHY.body,
     color: COLORS.primary,
-    marginLeft: SPACING.sm,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
