@@ -1,13 +1,13 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../shared/constants/theme';
-import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 
 function AddButton({ onPress }) {
   return (
-    <TouchableOpacity style={styles.addBtn} onPress={onPress} activeOpacity={0.8}>
-      <Ionicons name="add" size={28} color="#fff" />
+    <TouchableOpacity style={styles.addBtn} onPress={onPress} activeOpacity={0.85}>
+      <Ionicons name="add" size={26} color="#fff" />
     </TouchableOpacity>
   );
 }
@@ -21,20 +21,8 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textTertiary,
-        tabBarStyle: {
-          backgroundColor: COLORS.surface,
-          borderTopColor: COLORS.border,
-          borderTopWidth: 0,
-          height: 88,
-          paddingTop: 8,
-          paddingBottom: 28,
-          ...SHADOWS.md,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginTop: 2,
-        },
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabLabel,
       }}
     >
       <Tabs.Screen
@@ -68,29 +56,36 @@ export default function TabLayout() {
   );
 }
 
-const SHADOWS = {
-  md: {
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 0,
+    height: 85,
+    paddingTop: 8,
+    paddingBottom: 26,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 8,
   },
-};
-
-const styles = StyleSheet.create({
+  tabLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+  },
   addBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -20,
+    marginTop: -22,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
 });

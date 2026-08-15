@@ -3,10 +3,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../../shared/constants/theme';
 
-/**
- * Friendly empty state shown when no transactions exist.
- * Encourages user to add their first expense.
- */
 const EmptyState = () => {
   return (
     <View style={styles.container}>
@@ -15,7 +11,7 @@ const EmptyState = () => {
       </View>
       <Text style={styles.title}>No expenses yet</Text>
       <Text style={styles.subtitle}>
-        Tap the + button to add your first expense
+        Tap the + button below to add your first expense
       </Text>
     </View>
   );
@@ -26,27 +22,29 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: SPACING.xxxl,
-    paddingBottom: 80,
+    paddingHorizontal: 40,
+    paddingBottom: 100,
   },
   iconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: COLORS.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: 20,
   },
   title: {
-    ...TYPOGRAPHY.headerSection,
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
+    marginBottom: 8,
   },
   subtitle: {
-    ...TYPOGRAPHY.body,
+    fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

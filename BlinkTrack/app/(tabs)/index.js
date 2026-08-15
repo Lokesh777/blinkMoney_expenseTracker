@@ -5,8 +5,10 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '../../shared/constants/theme';
 import { useTransactions } from '../../features/transactions/hooks/useTransactions';
@@ -17,28 +19,26 @@ import LoadingSpinner from '../../shared/components/LoadingSpinner';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const { groupedTransactions, stats, loading } = useTransactions(refreshKey);
 
   useEffect(() => {
-    const unsub = navigation.addListener('focus', () => {
-      setRefreshKey((k) => k + 1);
-    });
+    const unsub = navigation.addListener('focus', () => setRefreshKey((k) => k + 1));
     return unsub;
   }, [navigation]);
 
   const onRefresh = () => {
     setRefreshing(true);
     setRefreshKey((k) => k + 1);
-    setTimeout(() => setRefreshing(false), 500);
+    setTimeout(() => setRefreshing(false), 600);
   };
 
   if (loading && !refreshing) return <LoadingSpinner />;
 
   const hasTransactions = groupedTransactions.length > 0;
 
-  // Flatten grouped transactions for FlatList
   const sections = groupedTransactions.map(([label, txns]) => ({
     title: label,
     data: txns,
@@ -61,36 +61,59 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Summary Card */}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Total Spent This Month</Text>
-        <Text style={styles.summaryAmount}>{formatCurrency(stats.totalSpent)}</Text>
-        {stats.insight ? (
-          <View style={styles.insightBadge}>
-            <Ionicons name="bulb-outline" size={13} color="#fff" />
-            <Text style={styles.insightText}>{stats.insight}</Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* Category Quick View */}
-      {stats.categoryBreakdown.length > 0 && (
-        <View style={styles.categoryRow}>
-          {stats.categoryBreakdown.slice(0, 4).map((cat) => (
-            <View key={cat.name} style={styles.categoryPill}>
-              <View style={[styles.catDot, { backgroundColor: cat.color }]} />
-              <Text style={styles.catName}>{cat.name}</Text>
-              <Text style={styles.catPercent}>{cat.percentage}%</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Transactions */}
       {hasTransactions ? (
         <FlatList
           data={sections}
           keyExtractor={(item) => item.title}
+          ListHeaderComponent={() => (
+            <>
+              {/* Summary Card */}
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Total Spent This Month</Text>
+                <Text style={styles.summaryAmount}>{formatCurrency(stats.totalSpent)}</Text>
+                {stats.insight ? (
+                  <View style={styles.insightBadge}>
+                    <Ionicons name="bulb-outline" size={13} color="#fff" />
+                    <Text style={styles.insightText} numberOfLines={1}>{stats.insight}</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Category Chips - horizontal scroll */}
+              {stats.categoryBreakdown.length > 0 && (
+                <View style={styles.catSection}>
+                  <Text style={styles.sectionTitle}>Categories</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.catScroll}
+                  >
+                    {stats.categoryBreakdown.map((cat) => (
+                      <TouchableOpacity
+                        key={cat.name}
+                        style={styles.catCard}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.catIconWrap, { backgroundColor: `${cat.color}18` }]}>
+                          <Ionicons name={cat.icon || 'pricetag'} size={16} color={cat.color} />
+                        </View>
+                        <View style={styles.catCardBody}>
+                          <Text style={styles.catCardName} numberOfLines={1}>{cat.name}</Text>
+                          <Text style={styles.catCardAmount}>{formatCurrency(cat.amount)}</Text>
+                        </View>
+                        <Text style={[styles.catCardPercent, { color: cat.color }]}>{cat.percentage}%</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Transactions Header */}
+              <View style={styles.txnHeader}>
+                <Text style={styles.sectionTitle}>Transactions</Text>
+              </View>
+            </>
+          )}
           renderItem={({ item }) => (
             <View>
               <Text style={styles.dateLabel}>{item.title}</Text>
@@ -108,6 +131,15 @@ export default function HomeScreen() {
       ) : (
         <EmptyState />
       )}
+
+      {/* Floating Add Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/add-transaction')}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -122,6 +154,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingBottom: SPACING.md,
     backgroundColor: COLORS.surface,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    ...SHADOWS.sm,
   },
   headerRow: {
     flexDirection: 'row',
@@ -152,16 +187,17 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
     backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.xl,
+    padding: 20,
     ...SHADOWS.lg,
   },
   summaryLabel: {
-    ...TYPOGRAPHY.label,
-    color: 'rgba(255,255,255,0.75)',
-    marginBottom: SPACING.xs,
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 4,
   },
   summaryAmount: {
-    fontSize: 34,
+    fontSize: 36,
     fontWeight: '800',
     color: '#fff',
     letterSpacing: -1,
@@ -170,62 +206,104 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: BORDER_RADIUS.sm,
-    paddingHorizontal: SPACING.sm,
+    borderRadius: 8,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     alignSelf: 'flex-start',
-    marginTop: SPACING.md,
-    gap: 4,
+    marginTop: 12,
+    gap: 5,
+    maxWidth: '100%',
   },
   insightText: {
-    ...TYPOGRAPHY.caption,
-    color: 'rgba(255,255,255,0.9)',
+    fontSize: 12,
     fontWeight: '500',
+    color: 'rgba(255,255,255,0.9)',
+    flexShrink: 1,
   },
-  categoryRow: {
-    flexDirection: 'row',
+  catSection: {
+    marginTop: SPACING.xl,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.sm,
+  },
+  catScroll: {
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.sm,
-    gap: 8,
+    paddingRight: SPACING.lg,
+    gap: 10,
   },
-  categoryPill: {
-    flex: 1,
+  catCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    gap: 4,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: 140,
     ...SHADOWS.sm,
   },
-  catDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  catIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
-  catName: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
+  catCardBody: {
     flex: 1,
   },
-  catPercent: {
-    fontSize: 10,
-    fontWeight: '700',
+  catCardName: {
+    fontSize: 12,
+    fontWeight: '600',
     color: COLORS.textPrimary,
   },
+  catCardAmount: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 1,
+  },
+  catCardPercent: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginLeft: 8,
+  },
+  txnHeader: {
+    marginTop: SPACING.xl,
+    marginBottom: 2,
+  },
   dateLabel: {
-    ...TYPOGRAPHY.label,
+    fontSize: 12,
+    fontWeight: '600',
     color: COLORS.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    paddingHorizontal: SPACING.lg,
+    letterSpacing: 0.3,
+    paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
+    paddingBottom: 6,
   },
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
 });

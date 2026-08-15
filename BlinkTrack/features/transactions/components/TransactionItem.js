@@ -1,24 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '../../../shared/constants/theme';
+import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY } from '../../../shared/constants/theme';
 import { getCategoryConfig, formatCurrency, formatRelativeTime } from '../utils/helpers';
 
-/**
- * Single transaction row displaying category icon, note, amount, and date.
- * Designed for visual clarity with clear hierarchy.
- */
 const TransactionItem = ({ transaction }) => {
   const config = getCategoryConfig(transaction.category);
 
   return (
     <View style={styles.container}>
-      {/* Category icon circle */}
       <View style={[styles.iconContainer, { backgroundColor: `${config.color}15` }]}>
-        <Ionicons name={config.icon} size={20} color={config.color} />
+        <Ionicons name={config.icon} size={18} color={config.color} />
       </View>
 
-      {/* Transaction details */}
       <View style={styles.details}>
         <Text style={styles.note} numberOfLines={1}>
           {transaction.note || transaction.category}
@@ -26,7 +20,6 @@ const TransactionItem = ({ transaction }) => {
         <Text style={styles.date}>{formatRelativeTime(transaction.date)}</Text>
       </View>
 
-      {/* Amount */}
       <Text style={styles.amount}>{formatCurrency(transaction.amount)}</Text>
     </View>
   );
@@ -36,35 +29,38 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.md,
+    paddingVertical: 12,
     paddingHorizontal: SPACING.lg,
     backgroundColor: COLORS.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.divider,
+    marginHorizontal: SPACING.lg,
+    marginBottom: 2,
+    borderRadius: 12,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.md,
+    marginRight: 12,
   },
   details: {
     flex: 1,
-    marginRight: SPACING.sm,
+    marginRight: 8,
   },
   note: {
-    ...TYPOGRAPHY.body,
+    fontSize: 14,
+    fontWeight: '500',
     color: COLORS.textPrimary,
-    marginBottom: 2,
   },
   date: {
-    ...TYPOGRAPHY.caption,
+    fontSize: 11,
     color: COLORS.textTertiary,
+    marginTop: 2,
   },
   amount: {
-    ...TYPOGRAPHY.amount,
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.textPrimary,
   },
 });

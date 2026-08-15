@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '../shared/constants/theme';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
-import { CATEGORIES, formatCurrency } from '../features/transactions/utils/helpers';
+import { CATEGORIES } from '../features/transactions/utils/helpers';
 
 export default function AddTransactionScreen() {
   const router = useRouter();
@@ -70,7 +70,7 @@ export default function AddTransactionScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-          <Ionicons name="close" size={22} color={COLORS.textPrimary} />
+          <Ionicons name="close" size={20} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Expense</Text>
         <TouchableOpacity
@@ -97,7 +97,7 @@ export default function AddTransactionScreen() {
             value={amount}
             onChangeText={handleAmountChange}
             placeholder="0"
-            placeholderTextColor="rgba(255,255,255,0.4)"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             keyboardType="decimal-pad"
             autoFocus
             maxLength={10}
@@ -105,28 +105,19 @@ export default function AddTransactionScreen() {
         </View>
 
         {/* Categories */}
-        <Text style={styles.sectionLabel}>Category</Text>
-        <View style={styles.categoriesGrid}>
+        <Text style={styles.label}>Category</Text>
+        <View style={styles.catGrid}>
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.name;
             return (
               <TouchableOpacity
                 key={cat.id}
-                style={[
-                  styles.catBtn,
-                  isSelected && { backgroundColor: cat.color, borderColor: cat.color },
-                ]}
+                style={[styles.catBtn, isSelected && { backgroundColor: cat.color, borderColor: cat.color }]}
                 onPress={() => setSelectedCategory(cat.name)}
                 activeOpacity={0.7}
               >
-                <Ionicons
-                  name={cat.icon}
-                  size={20}
-                  color={isSelected ? '#fff' : cat.color}
-                />
-                <Text
-                  style={[styles.catBtnText, isSelected && styles.catBtnTextSelected]}
-                >
+                <Ionicons name={cat.icon} size={18} color={isSelected ? '#fff' : cat.color} />
+                <Text style={[styles.catBtnText, isSelected && { color: '#fff', fontWeight: '700' }]}>
                   {cat.name}
                 </Text>
               </TouchableOpacity>
@@ -135,7 +126,7 @@ export default function AddTransactionScreen() {
         </View>
 
         {/* Note */}
-        <Text style={styles.sectionLabel}>Note (optional)</Text>
+        <Text style={styles.label}>Note (optional)</Text>
         <View style={styles.inputCard}>
           <Ionicons name="pencil-outline" size={16} color={COLORS.textTertiary} />
           <TextInput
@@ -149,7 +140,7 @@ export default function AddTransactionScreen() {
         </View>
 
         {/* Date */}
-        <Text style={styles.sectionLabel}>Date</Text>
+        <Text style={styles.label}>Date</Text>
         <View style={styles.dateCard}>
           <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
           <Text style={styles.dateText}>
@@ -191,26 +182,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    ...TYPOGRAPHY.title,
-    color: COLORS.textPrimary,
+    fontSize: 16,
     fontWeight: '700',
+    color: COLORS.textPrimary,
   },
   saveBtn: {
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: 8,
     backgroundColor: COLORS.primary,
   },
   saveBtnDisabled: {
     opacity: 0.4,
   },
   saveBtnText: {
-    ...TYPOGRAPHY.label,
-    color: '#fff',
+    fontSize: 14,
     fontWeight: '700',
+    color: '#fff',
   },
   saveBtnTextDisabled: {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.5)',
   },
   body: {
     flex: 1,
@@ -222,7 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.xl,
-    paddingVertical: 32,
+    paddingVertical: 36,
     marginTop: SPACING.xl,
     marginBottom: SPACING.xxl,
     ...SHADOWS.lg,
@@ -230,25 +221,26 @@ const styles = StyleSheet.create({
   amountPrefix: {
     fontSize: 28,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.6)',
     marginRight: 4,
   },
   amountInput: {
-    fontSize: 48,
+    fontSize: 52,
     fontWeight: '800',
     color: '#fff',
     minWidth: 60,
     textAlign: 'center',
     letterSpacing: -1,
   },
-  sectionLabel: {
-    ...TYPOGRAPHY.label,
+  label: {
+    fontSize: 12,
+    fontWeight: '600',
     color: COLORS.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: SPACING.md,
+    marginBottom: 10,
   },
-  categoriesGrid: {
+  catGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
@@ -257,28 +249,25 @@ const styles = StyleSheet.create({
   catBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: BORDER_RADIUS.full,
+    borderRadius: 20,
     borderWidth: 1.5,
     borderColor: COLORS.border,
     backgroundColor: COLORS.surface,
     gap: 6,
   },
   catBtnText: {
-    ...TYPOGRAPHY.label,
+    fontSize: 13,
+    fontWeight: '500',
     color: COLORS.textSecondary,
-  },
-  catBtnTextSelected: {
-    color: '#fff',
-    fontWeight: '700',
   },
   inputCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -286,21 +275,21 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    ...TYPOGRAPHY.body,
+    fontSize: 15,
     color: COLORS.textPrimary,
-    marginLeft: SPACING.sm,
+    marginLeft: 10,
   },
   dateCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primarySurface,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 14,
     gap: 8,
   },
   dateText: {
-    ...TYPOGRAPHY.body,
+    fontSize: 14,
     color: COLORS.primary,
     fontWeight: '600',
   },

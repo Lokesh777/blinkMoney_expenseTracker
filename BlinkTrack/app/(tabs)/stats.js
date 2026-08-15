@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '../../shared/constants/theme';
 import { useTransactions } from '../../features/transactions/hooks/useTransactions';
@@ -8,17 +8,18 @@ import { formatCurrency, getCategoryConfig } from '../../features/transactions/u
 
 export default function StatsScreen() {
   const navigation = useNavigation();
+  const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
-  const { stats, transactions, loading } = useTransactions(refreshKey);
+  const [showAllActivity, setShowAllActivity] = useState(false);
+  const { stats, transactions } = useTransactions(refreshKey);
 
   useEffect(() => {
-    const unsub = navigation.addListener('focus', () => {
-      setRefreshKey((k) => k + 1);
-    });
+    const unsub = navigation.addListener('focus', () => setRefreshKey((k) => k + 1));
     return unsub;
   }, [navigation]);
 
   const maxAmount = Math.max(...stats.categoryBreakdown.map((c) => c.amount), 1);
+  const visibleTransactions = showAllActivity ? transactions.slice(0, 10) : transactions.slice(0, 5);
 
   return (
     <View style={styles.container}>
@@ -41,8 +42,10 @@ export default function StatsScreen() {
         {/* Insight */}
         {stats.insight ? (
           <View style={styles.insightCard}>
-            <Ionicons name="bulb" size={20} color={COLORS.primary} />
-            <View style={{ flex: 1, marginLeft: SPACING.md }}>
+            <View style={styles.insightIcon}>
+              <Ionicons name="bulb" size={18} color={COLORS.primary} />
+            </View>
+            <View style={styles.insightContent}>
               <Text style={styles.insightTitle}>Spending Insight</Text>
               <Text style={styles.insightBody}>{stats.insight}</Text>
             </View>
@@ -52,20 +55,25 @@ export default function StatsScreen() {
         {/* Category Breakdown */}
         <Text style={styles.sectionTitle}>Category Breakdown</Text>
         {stats.categoryBreakdown.length > 0 ? (
-          stats.categoryBreakdown.map((cat) => {
+          stats.categoryBreakdown.map((cat, index) => {
             const config = getCategoryConfig(cat.name);
             const barWidth = (cat.amount / maxAmount) * 100;
             return (
-              <View key={cat.name} style={styles.catCard}>
-                <View style={styles.catHeader}>
-                  <View style={[styles.catIcon, { backgroundColor: `${config.color}15` }]}>
+              <View key={cat.name} style={[styles.catCard, index === 0 && styles.catCardFirst]}>
+                <View style={styles.catTop}>
+                  <View style={[styles.catIcon, { backgroundColor: `${config.color}18` }]}>
                     <Ionicons name={config.icon} size={18} color={config.color} />
                   </View>
                   <View style={styles.catInfo}>
                     <Text style={styles.catName}>{cat.name}</Text>
-                    <Text style={styles.catAmount}>{formatCurrency(cat.amount)}</Text>
+                    <Text style={styles.catTxnCount}>
+                      {cat.transactionCount || '—'}
+                    </Text>
                   </View>
-                  <Text style={[styles.catPercent, { color: config.color }]}>{cat.percentage}%</Text>
+                  <View style={styles.catRight}>
+                    <Text style={styles.catAmount}>{formatCurrency(cat.amount)}</Text>
+                    <Text style={[styles.catPercent, { color: config.color }]}>{cat.percentage}%</Text>
+                  </View>
                 </View>
                 <View style={styles.barBg}>
                   <View style={[styles.barFill, { width: `${barWidth}%`, backgroundColor: config.color }]} />
@@ -75,34 +83,58 @@ export default function StatsScreen() {
           })
         ) : (
           <View style={styles.emptyCard}>
-            <Ionicons name="analytics-outline" size={40} color={COLORS.textTertiary} />
-            <Text style={styles.emptyText}>No data yet. Add some expenses!</Text>
+            <Ionicons name="analytics-outline" size={44} color={COLORS.textTertiary} />
+            <Text style={styles.emptyText}>No data yet</Text>
+            <Text style={styles.emptySubtext}>Add some expenses to see your stats</Text>
           </View>
         )}
 
         {/* Recent Activity */}
-        {transactions.length > 0 && (
+        {visibleTransactions.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <View style={styles.activityHeader}>
+              <Text style={styles.sectionTitle}>Recent Activity</Text>
+              {transactions.length > 5 && (
+                <TouchableOpacity onPress={() => setShowAllActivity(!showAllActivity)}>
+                  <Text style={styles.viewAll}>{showAllActivity ? 'Show Less' : 'View All'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <View style={styles.activityCard}>
-              <View style={styles.activityRow}>
-                <View style={[styles.activityDot, { backgroundColor: COLORS.primary }]} />
-                <Text style={styles.activityLabel}>This month</Text>
-                <Text style={styles.activityValue}>{stats.transactionCount} expenses</Text>
-              </View>
-              {stats.categoryBreakdown.slice(0, 3).map((cat) => (
-                <View key={cat.name} style={styles.activityRow}>
-                  <View style={[styles.activityDot, { backgroundColor: cat.color }]} />
-                  <Text style={styles.activityLabel}>{cat.name}</Text>
-                  <Text style={styles.activityValue}>{formatCurrency(cat.amount)}</Text>
-                </View>
-              ))}
+              {visibleTransactions.map((txn, index) => {
+                const config = getCategoryConfig(txn.category);
+                return (
+                  <View key={txn.id} style={[styles.activityRow, index < visibleTransactions.length - 1 && styles.activityRowBorder]}>
+                    <View style={[styles.activityIcon, { backgroundColor: `${config.color}15` }]}>
+                      <Ionicons name={config.icon} size={14} color={config.color} />
+                    </View>
+                    <View style={styles.activityInfo}>
+                      <Text style={styles.activityName} numberOfLines={1}>
+                        {txn.note || txn.category}
+                      </Text>
+                      <Text style={styles.activityDate}>
+                        {new Date(txn.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </Text>
+                    </View>
+                    <Text style={styles.activityAmount}>{formatCurrency(txn.amount)}</Text>
+                  </View>
+                );
+              })}
             </View>
           </>
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* Floating Add Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/add-transaction')}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -117,6 +149,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingBottom: SPACING.lg,
     backgroundColor: COLORS.surface,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    ...SHADOWS.sm,
   },
   headerTitle: {
     fontSize: 22,
@@ -136,132 +171,210 @@ const styles = StyleSheet.create({
   totalCard: {
     backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.xl,
+    padding: 20,
     alignItems: 'center',
     ...SHADOWS.lg,
   },
   totalLabel: {
-    ...TYPOGRAPHY.label,
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.7)',
   },
   totalAmount: {
-    fontSize: 38,
+    fontSize: 40,
     fontWeight: '800',
     color: '#fff',
     letterSpacing: -1,
     marginVertical: 4,
   },
   totalCount: {
-    ...TYPOGRAPHY.caption,
-    color: 'rgba(255,255,255,0.65)',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.55)',
   },
   insightCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: COLORS.primarySurface,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.lg,
     marginTop: SPACING.lg,
   },
+  insightIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: `${COLORS.primary}18`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  insightContent: {
+    flex: 1,
+  },
   insightTitle: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.primary,
+    fontSize: 13,
     fontWeight: '700',
-    marginBottom: 2,
+    color: COLORS.primary,
+    marginBottom: 3,
   },
   insightBody: {
-    ...TYPOGRAPHY.body,
+    fontSize: 14,
     color: COLORS.textPrimary,
+    lineHeight: 20,
   },
   sectionTitle: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.textTertiary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: SPACING.xxl,
     marginBottom: SPACING.md,
+    paddingHorizontal: 0,
   },
   catCard: {
     backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.lg,
-    marginBottom: SPACING.sm,
+    padding: 16,
+    marginBottom: 10,
     ...SHADOWS.sm,
   },
-  catHeader: {
+  catCardFirst: {
+    marginTop: 0,
+  },
+  catTop: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   catIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.md,
+    marginRight: 12,
   },
   catInfo: {
     flex: 1,
   },
   catName: {
-    ...TYPOGRAPHY.title,
+    fontSize: 15,
+    fontWeight: '600',
     color: COLORS.textPrimary,
   },
-  catAmount: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+  catTxnCount: {
+    fontSize: 12,
+    color: COLORS.textTertiary,
     marginTop: 1,
   },
+  catRight: {
+    alignItems: 'flex-end',
+  },
+  catAmount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
   catPercent: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 1,
   },
   barBg: {
-    height: 4,
+    height: 5,
     backgroundColor: COLORS.divider,
-    borderRadius: 2,
-    marginTop: SPACING.md,
+    borderRadius: 2.5,
+    marginTop: 12,
+    overflow: 'hidden',
   },
   barFill: {
-    height: 4,
-    borderRadius: 2,
+    height: 5,
+    borderRadius: 2.5,
   },
   emptyCard: {
     backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.xxxl,
+    padding: 40,
     alignItems: 'center',
     ...SHADOWS.sm,
   },
   emptyText: {
-    ...TYPOGRAPHY.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginTop: 12,
+  },
+  emptySubtext: {
+    fontSize: 13,
     color: COLORS.textTertiary,
-    marginTop: SPACING.md,
+    marginTop: 4,
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  viewAll: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   activityCard: {
     backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.lg,
+    padding: 4,
     ...SHADOWS.sm,
   },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: SPACING.md,
+  activityRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.divider,
   },
-  activityLabel: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textPrimary,
+  activityIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  activityInfo: {
     flex: 1,
   },
-  activityValue: {
-    ...TYPOGRAPHY.amount,
+  activityName: {
+    fontSize: 14,
+    fontWeight: '500',
     color: COLORS.textPrimary,
+  },
+  activityDate: {
+    fontSize: 11,
+    color: COLORS.textTertiary,
+    marginTop: 1,
+  },
+  activityAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
 });
