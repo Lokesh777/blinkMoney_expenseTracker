@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation, useRouter } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '../../shared/constants/theme';
 import { useTransactions } from '../../features/transactions/hooks/useTransactions';
@@ -8,7 +8,6 @@ import { formatCurrency, getCategoryConfig } from '../../features/transactions/u
 
 export default function StatsScreen() {
   const navigation = useNavigation();
-  const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showAllActivity, setShowAllActivity] = useState(false);
   const { stats, transactions } = useTransactions(refreshKey);
@@ -127,14 +126,7 @@ export default function StatsScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Floating Add Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/add-transaction')}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+
     </View>
   );
 }
@@ -360,21 +352,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.textPrimary,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 8,
   },
 });
