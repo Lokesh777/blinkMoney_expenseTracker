@@ -1,8 +1,7 @@
-import React, { useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '../shared/constants/theme';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { formatCurrency } from '../features/transactions/utils/helpers';
@@ -18,14 +17,17 @@ import LoadingSpinner from '../shared/components/LoadingSpinner';
  */
 export default function HomeScreen() {
   const router = useRouter();
-  const { groupedTransactions, stats, loading, refresh } = useTransactions();
+  const navigation = useNavigation();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { groupedTransactions, stats, loading } = useTransactions(refreshKey);
 
-  // Re-fetch transactions every time the screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-    }, [])
-  );
+  // Re-fetch data when screen gains focus (e.g. returning from Add screen)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setRefreshKey((k) => k + 1);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -62,21 +64,12 @@ export default function HomeScreen() {
 
       {/* Content */}
       {hasTransactions ? (
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* Category Breakdown */}
+        <View style={styles.content}>
           <Text style={styles.sectionTitle}>This Month</Text>
           <CategoryBreakdown categories={stats.categoryBreakdown} />
-
-          {/* Transaction List */}
           <Text style={styles.sectionTitle}>Transactions</Text>
-          <View style={styles.transactionCard}>
-            <TransactionList groupedTransactions={groupedTransactions} />
-          </View>
-        </ScrollView>
+          <TransactionList groupedTransactions={groupedTransactions} />
+        </View>
       ) : (
         <EmptyState />
       )}
@@ -159,9 +152,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  scrollContent: {
-    paddingTop: SPACING.xl,
-  },
   sectionTitle: {
     ...TYPOGRAPHY.label,
     color: COLORS.textTertiary,
@@ -169,12 +159,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     paddingHorizontal: SPACING.xl,
     marginBottom: SPACING.md,
-  },
-  transactionCard: {
-    backgroundColor: COLORS.surface,
-    marginHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.md,
-    overflow: 'hidden',
-    ...SHADOWS.sm,
   },
 });

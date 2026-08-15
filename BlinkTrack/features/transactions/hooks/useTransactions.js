@@ -5,16 +5,18 @@ import { calculateMonthlyStats, groupTransactionsByDate, generateId } from '../u
 /**
  * Custom hook encapsulating all transaction data logic.
  * Handles AsyncStorage read/write, monthly calculations, and CRUD operations.
+ * @param {number} refreshKey - Increment to force re-fetch from storage.
  */
-export const useTransactions = () => {
+export const useTransactions = (refreshKey = 0) => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load transactions on mount
+  // Load transactions on mount and whenever refreshKey changes
   useEffect(() => {
     const init = async () => {
       try {
+        setLoading(true);
         const data = await loadTransactions();
         setTransactions(data);
       } catch (e) {
@@ -24,7 +26,7 @@ export const useTransactions = () => {
       }
     };
     init();
-  }, []);
+  }, [refreshKey]);
 
   // Recalculate stats whenever transactions change
   const stats = calculateMonthlyStats(transactions);
@@ -55,19 +57,6 @@ export const useTransactions = () => {
     await saveTransactions(updated);
   }, [transactions]);
 
-  // Reload transactions from AsyncStorage
-  const refresh = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await loadTransactions();
-      setTransactions(data);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   return {
     transactions,
     groupedTransactions,
@@ -76,6 +65,5 @@ export const useTransactions = () => {
     error,
     add,
     remove,
-    refresh,
   };
 };
