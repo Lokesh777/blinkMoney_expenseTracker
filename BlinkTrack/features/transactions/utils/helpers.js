@@ -3,11 +3,11 @@ import { COLORS } from '../../../shared/constants/theme';
 // Category configuration with icons and colors
 export const CATEGORIES = [
   { id: 'food', name: 'Food', icon: 'restaurant', color: COLORS.categories.Food },
-  { id: 'travel', name: 'Travel', icon: 'flight', color: COLORS.categories.Travel },
-  { id: 'shopping', name: 'Shopping', icon: 'shopping bag', color: COLORS.categories.Shopping },
+  { id: 'travel', name: 'Travel', icon: 'car', color: COLORS.categories.Travel },
+  { id: 'shopping', name: 'Shopping', icon: 'cart', color: COLORS.categories.Shopping },
   { id: 'bills', name: 'Bills', icon: 'receipt', color: COLORS.categories.Bills },
   { id: 'entertainment', name: 'Entertainment', icon: 'film', color: COLORS.categories.Entertainment },
-  { id: 'other', name: 'Other', icon: 'dots-horizontal', color: COLORS.categories.Other },
+  { id: 'other', name: 'Other', icon: 'ellipsis-horizontal', color: COLORS.categories.Other },
 ];
 
 // Get category config by name

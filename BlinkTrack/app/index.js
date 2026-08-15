@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS, TYPOGRAPHY, SHADOWS } from '../shared/constants/theme';
 import { useTransactions } from '../features/transactions/hooks/useTransactions';
 import { formatCurrency } from '../features/transactions/utils/helpers';
@@ -17,7 +18,14 @@ import LoadingSpinner from '../shared/components/LoadingSpinner';
  */
 export default function HomeScreen() {
   const router = useRouter();
-  const { groupedTransactions, stats, loading } = useTransactions();
+  const { groupedTransactions, stats, loading, refresh } = useTransactions();
+
+  // Re-fetch transactions every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [])
+  );
 
   if (loading) return <LoadingSpinner />;
 

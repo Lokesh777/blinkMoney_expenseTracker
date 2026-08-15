@@ -55,6 +55,19 @@ export const useTransactions = () => {
     await saveTransactions(updated);
   }, [transactions]);
 
+  // Reload transactions from AsyncStorage
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await loadTransactions();
+      setTransactions(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     transactions,
     groupedTransactions,
@@ -63,5 +76,6 @@ export const useTransactions = () => {
     error,
     add,
     remove,
+    refresh,
   };
 };
