@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  SectionList,
   StyleSheet,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
+  LogBox,
 } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,63 @@ import { formatCurrency } from '../../features/transactions/utils/helpers';
 import TransactionItem from '../../features/transactions/components/TransactionItem';
 import EmptyState from '../../features/transactions/components/EmptyState';
 import LoadingSpinner from '../../shared/components/LoadingSpinner';
+
+LogBox.ignoreLogs(['VirtualizedLists should never be nested inside plain ScrollViews']);
+
+const HomeHeader = React.memo(({ stats }) => (
+  <>
+    <View style={styles.summaryCard}>
+      <Text style={styles.summaryLabel}>Total Spent This Month</Text>
+      <Text style={styles.summaryAmount}>{formatCurrency(stats.totalSpent)}</Text>
+      {stats.insight ? (
+        <View style={styles.insightBadge}>
+          <Ionicons name="bulb-outline" size={13} color="#fff" />
+          <Text style={styles.insightText} numberOfLines={1}>{stats.insight}</Text>
+        </View>
+      ) : null}
+    </View>
+
+    {stats.categoryBreakdown.length > 0 && (
+      <View style={styles.catSection}>
+        <Text style={styles.sectionTitle}>Categories</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.catScroll}
+        >
+          {stats.categoryBreakdown.map((cat) => (
+            <TouchableOpacity
+              key={cat.name}
+              style={styles.catCard}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.catIconWrap, { backgroundColor: `${cat.color}18` }]}>
+                <Ionicons name={cat.icon || 'pricetag'} size={16} color={cat.color} />
+              </View>
+              <View style={styles.catCardBody}>
+                <Text style={styles.catCardName} numberOfLines={1}>{cat.name}</Text>
+                <Text style={styles.catCardAmount}>{formatCurrency(cat.amount)}</Text>
+              </View>
+              <Text style={[styles.catCardPercent, { color: cat.color }]}>{cat.percentage}%</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    )}
+
+    <View style={styles.txnHeader}>
+      <Text style={styles.sectionTitle}>Transactions</Text>
+    </View>
+  </>
+));
+
+const SectionHeader = React.memo(({ title }) => (
+  <View style={styles.sectionHeaderRow}>
+    <Text style={styles.dateLabel}>{title}</Text>
+  </View>
+));
+
+const ItemSeparator = () => <View style={styles.itemSeparator} />;
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -29,24 +87,35 @@ export default function HomeScreen() {
     return unsub;
   }, [navigation]);
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     setRefreshKey((k) => k + 1);
     setTimeout(() => setRefreshing(false), 600);
-  };
+  }, []);
+
+  const sections = useMemo(
+    () =>
+      groupedTransactions.map(([label, txns]) => ({
+        title: label,
+        data: txns,
+      })),
+    [groupedTransactions]
+  );
+
+  const renderItem = useCallback(({ item }) => <TransactionItem transaction={item} />, []);
+
+  const renderSectionHeader = useCallback(({ section }) => (
+    <SectionHeader title={section.title} />
+  ), []);
+
+  const keyExtractor = useCallback((item) => item.id, []);
 
   if (loading && !refreshing) return <LoadingSpinner />;
 
   const hasTransactions = groupedTransactions.length > 0;
 
-  const sections = groupedTransactions.map(([label, txns]) => ({
-    title: label,
-    data: txns,
-  }));
-
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <View>
@@ -62,77 +131,24 @@ export default function HomeScreen() {
       </View>
 
       {hasTransactions ? (
-        <FlatList
-          data={sections}
-          keyExtractor={(item) => item.title}
-          ListHeaderComponent={() => (
-            <>
-              {/* Summary Card */}
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>Total Spent This Month</Text>
-                <Text style={styles.summaryAmount}>{formatCurrency(stats.totalSpent)}</Text>
-                {stats.insight ? (
-                  <View style={styles.insightBadge}>
-                    <Ionicons name="bulb-outline" size={13} color="#fff" />
-                    <Text style={styles.insightText} numberOfLines={1}>{stats.insight}</Text>
-                  </View>
-                ) : null}
-              </View>
-
-              {/* Category Chips - horizontal scroll */}
-              {stats.categoryBreakdown.length > 0 && (
-                <View style={styles.catSection}>
-                  <Text style={styles.sectionTitle}>Categories</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.catScroll}
-                  >
-                    {stats.categoryBreakdown.map((cat) => (
-                      <TouchableOpacity
-                        key={cat.name}
-                        style={styles.catCard}
-                        activeOpacity={0.7}
-                      >
-                        <View style={[styles.catIconWrap, { backgroundColor: `${cat.color}18` }]}>
-                          <Ionicons name={cat.icon || 'pricetag'} size={16} color={cat.color} />
-                        </View>
-                        <View style={styles.catCardBody}>
-                          <Text style={styles.catCardName} numberOfLines={1}>{cat.name}</Text>
-                          <Text style={styles.catCardAmount}>{formatCurrency(cat.amount)}</Text>
-                        </View>
-                        <Text style={[styles.catCardPercent, { color: cat.color }]}>{cat.percentage}%</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-
-              {/* Transactions Header */}
-              <View style={styles.txnHeader}>
-                <Text style={styles.sectionTitle}>Transactions</Text>
-              </View>
-            </>
-          )}
-          renderItem={({ item }) => (
-            <View>
-              <Text style={styles.dateLabel}>{item.title}</Text>
-              {item.data.map((txn) => (
-                <TransactionItem key={txn.id} transaction={txn} />
-              ))}
-            </View>
-          )}
+        <SectionList
+          sections={sections}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          renderSectionHeader={renderSectionHeader}
+          ListHeaderComponent={<HomeHeader stats={stats} />}
+          ItemSeparatorComponent={ItemSeparator}
+          stickySectionHeadersEnabled={false}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
           }
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews={false}
         />
       ) : (
         <EmptyState />
       )}
-
-
     </View>
   );
 }
@@ -270,15 +286,20 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     marginBottom: 2,
   },
+  sectionHeaderRow: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.md,
+    paddingBottom: 6,
+  },
   dateLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.md,
-    paddingBottom: 6,
+  },
+  itemSeparator: {
+    height: 2,
   },
   listContent: {
     paddingBottom: 120,
